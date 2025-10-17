@@ -63,8 +63,8 @@ steps:
         from_secret: aws_session_token
       AWS_DEFAULT_REGION: us-east-1
     commands:
-      - SHORT_SHA=$(echo ${DRONE_COMMIT_SHA} | cut -c1-7)
-      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://release/resto-${SHORT_SHA}.tar.gz
+      - sh -c "SHORT_SHA=$(echo ${DRONE_COMMIT_SHA} | cut -c1-7) && \
+              aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://release/resto-${SHORT_SHA}.tar.gz"
 
 trigger:
   branch:
