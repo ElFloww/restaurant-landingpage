@@ -10,7 +10,7 @@ type: docker
 name: hugo-build
 
 steps:
-  - name: build-hugo
+  - name: hugo-build
     image: peaceiris/hugo:v0.65.3-mod
     environment:
       <<: *hugo_env
