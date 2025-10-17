@@ -72,3 +72,50 @@ trigger:
   event:
     - push
     - custom
+
+
+
+---
+
+hugo_env: &hugo_env
+  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
+  
+# ============================================
+# 🏷️ BUILD + UPLOAD (tag)
+# ============================================
+kind: pipeline
+type: docker
+name: hugo-build-and-upload-tag
+
+steps:
+  # Build Hugo
+  - name: hugo-build
+    image: peaceiris/hugo:v0.65.3-mod
+    environment:
+      <<: *hugo_env
+    commands:
+      - hugo --baseURL $BASE_URL
+
+  # Créer une archive
+  - name: package-build
+    image: alpine:latest
+    commands:
+      - tar -czf build-${DRONE_TAG}.tar.gz -C public .
+
+  # Upload vers S3 sous forme TAG
+  - name: upload-to-s3
+    image: amazon/aws-cli:2.13.7
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: aws_access_key_id
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: aws_secret_access_key
+      AWS_SESSION_TOKEN:
+        from_secret: aws_session_token
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - aws s3 cp build-${DRONE_TAG}.tar.gz s3://release/resto-${DRONE_TAG}.tar.gz
+
+trigger:
+  event:
+    - tag
