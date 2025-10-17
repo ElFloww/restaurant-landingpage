@@ -50,5 +50,4 @@ trigger:
     - master
   event:
     - push
-    - tag
-    - promote
+    - custom
