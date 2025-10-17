@@ -59,11 +59,15 @@ steps:
       - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://buket-restaurant-release/release/resto-$SHORT_SHA.tar.gz
 
 trigger:
-  branch:
-    - master
   event:
     - push
-    - custom
+  branch:
+    - master
+
+
+
+
+
 
 
 # ---
