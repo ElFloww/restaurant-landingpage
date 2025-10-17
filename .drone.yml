@@ -1,5 +1,5 @@
 hugo_env: &hugo_env
-  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com/
+  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
   
 kind: pipeline
 type: docker
