@@ -76,12 +76,12 @@ a:active {
   font-size: 15px;
 }
 
-.section {
-  padding: 100px 0;
-}
-
 .d-inline-block {
   display: inline-block;
+}
+
+.section {
+  padding: 100px 0;
 }
 
 /*============== Mixins style start ================*/
