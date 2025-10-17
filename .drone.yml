@@ -35,7 +35,7 @@ steps:
         from_secret: aws_session_token
       AWS_DEFAULT_REGION: us-east-1
     commands:
-      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://buket-restaurant-release/builds/${DRONE_COMMIT_SHA}.tar.g
+      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://buket-restaurant-release/builds/${DRONE_COMMIT_SHA}.tar.gz
 
 trigger:
   branch:
