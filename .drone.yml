@@ -1,6 +1,3 @@
-hugo_env: &hugo_env
-  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
-
 # ============================================
 # 🏗️ PIPELINE BUILD (toutes les branches)
 # ============================================
@@ -11,10 +8,8 @@ name: hugo-build
 steps:
   - name: build-hugo
     image: peaceiris/hugo:v0.65.3-mod
-    environment:
-      <<: *hugo_env
     commands:
-      - hugo --baseURL $BASE_URL
+      - hugo
 
 # Trigger sur TOUTES les branches
 trigger:
@@ -25,9 +20,6 @@ trigger:
       - master
 
 ---
-
-hugo_env: &hugo_env
-  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
 
 # ------------------------------
 # Pipeline de build + packager
@@ -40,10 +32,8 @@ steps:
   # Build Hugo
   - name: hugo-build
     image: peaceiris/hugo:v0.65.3-mod
-    environment:
-      <<: *hugo_env
     commands:
-      - hugo --baseURL $BASE_URL
+      - hugo
 
   # Packager en tar.gz
   - name: package-build
@@ -77,9 +67,6 @@ trigger:
 
 ---
 
-hugo_env: &hugo_env
-  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
-
 # ============================================
 # 🏷️ BUILD + UPLOAD (tag)
 # ============================================
@@ -92,9 +79,9 @@ steps:
   - name: hugo-build
     image: peaceiris/hugo:v0.65.3-mod
     environment:
-      <<: *hugo_env
+      BASE_URL_PROD: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
     commands:
-      - hugo --baseURL $BASE_URL
+      - hugo --baseURL $BASE_URL_PROD
 
   # # Créer une archive
   # - name: package-build
