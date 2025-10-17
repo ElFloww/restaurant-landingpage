@@ -1,12 +1,37 @@
 hugo_env: &hugo_env
   BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
 
-# ------------------------------
-# Pipeline de build + packager
-# ------------------------------
+# ============================================
+# 🏗️ PIPELINE BUILD (toutes les branches)
+# ============================================
 kind: pipeline
 type: docker
-name: hugo-build-and-upload
+name: hugo-build
+
+steps:
+  - name: build-hugo
+    image: peaceiris/hugo:v0.65.3-mod
+    environment:
+      <<: *hugo_env
+    commands:
+      - hugo --baseURL $BASE_URL
+
+# Trigger sur TOUTES les branches
+trigger:
+  event:
+    - push
+  branch:
+    exclude:
+      - master
+
+---
+
+# ============================================
+# 🏗️ BUILD + UPLOAD (branche master)
+# ============================================
+kind: pipeline
+type: docker
+name: hugo-build-and-upload-master
 
 steps:
   # Build Hugo
@@ -17,13 +42,13 @@ steps:
     commands:
       - hugo --baseURL $BASE_URL
 
-  # Packager en tar.gz
+  # Créer une archive
   - name: package-build
     image: alpine:latest
     commands:
       - tar -czf build-${DRONE_COMMIT_SHA}.tar.gz -C public .
 
-  # Upload compressé vers S3 (archive de build)
+  # Upload vers S3 sous forme SHA
   - name: upload-to-s3
     image: amazon/aws-cli:2.13.7
     environment:
@@ -35,30 +60,75 @@ steps:
         from_secret: aws_session_token
       AWS_DEFAULT_REGION: us-east-1
     commands:
-      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://buket-restaurant-release/builds/${DRONE_COMMIT_SHA}.tar.gz
+      - SHORT_SHA=$(echo ${DRONE_COMMIT_SHA} | cut -c1-7)
+      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://release/resto-${SHORT_SHA}.tar.gz
 
 trigger:
-  branch:
-    - master
   event:
     - push
-    - custom
+  branch:
+    - master
 
 ---
+
+# ============================================
+# 🏷️ BUILD + UPLOAD (tag)
+# ============================================
+kind: pipeline
+type: docker
+name: hugo-build-and-upload-tag
+
+steps:
+  # Build Hugo
+  - name: hugo-build
+    image: peaceiris/hugo:v0.65.3-mod
+    environment:
+      <<: *hugo_env
+    commands:
+      - hugo --baseURL $BASE_URL
+
+  # Créer une archive
+  - name: package-build
+    image: alpine:latest
+    commands:
+      - tar -czf build-${DRONE_TAG}.tar.gz -C public .
+
+  # Upload vers S3 sous forme TAG
+  - name: upload-to-s3
+    image: amazon/aws-cli:2.13.7
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: aws_access_key_id
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: aws_secret_access_key
+      AWS_SESSION_TOKEN:
+        from_secret: aws_session_token
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - aws s3 cp build-${DRONE_TAG}.tar.gz s3://release/resto-${DRONE_TAG}.tar.gz
+
+trigger:
+  event:
+    - tag
+
+---
+
+# ============================================
+# 🚀 PROMOTE (déploiement staging/prod)
+# ============================================
 kind: pipeline
 type: docker
 name: promote-to-environment
 
 steps:
-  # 1️⃣ Définir la target à partir du paramètre
   - name: set-target
     image: alpine:latest
     environment:
-      TARGET_ENV: ${TARGET_ENV}  # Drone injecte le paramètre
+      TARGET_ENV: ${TARGET_ENV}
     commands:
-      - echo "Deploying to $TARGET_ENV environment"
+      - echo "Promotion target: $TARGET_ENV"
 
-  # 2️⃣ Récupérer le tar.gz du build choisi
+  # Télécharger le bon build selon l'environnement
   - name: download-build
     image: amazon/aws-cli:2.13.7
     environment:
@@ -71,11 +141,17 @@ steps:
       AWS_DEFAULT_REGION: us-east-1
       TARGET_ENV: ${TARGET_ENV}
     commands:
-      - aws s3 cp s3://buket-restaurant-release/builds/${DRONE_TAG}.tar.gz ./build.tar.gz
       - mkdir -p public
+      - |
+        if [ "$TARGET_ENV" = "prod" ]; then
+          aws s3 cp s3://release/resto-${DRONE_TAG}.tar.gz ./build.tar.gz
+        else
+          SHORT_SHA=$(echo ${DRONE_COMMIT_SHA} | cut -c1-7)
+          aws s3 cp s3://release/resto-${SHORT_SHA}.tar.gz ./build.tar.gz
+        fi
       - tar -xzf build.tar.gz -C public
 
-  # 3️⃣ Déployer le build sur le bucket correspondant
+  # Déploiement sur le bucket cible
   - name: deploy-to-s3
     image: amazon/aws-cli:2.13.7
     environment:
@@ -89,20 +165,17 @@ steps:
       TARGET_ENV: ${TARGET_ENV}
     commands:
       - |
-        if [ "$TARGET_ENV" = "production" ]; then
-          aws s3 sync public/ s3://buket-restaurant --delete
+        if [ "$TARGET_ENV" = "prod" ]; then
+          aws s3 sync public/ s3://buket-restaurant-prod --delete
         else
-          aws s3 sync public/ s3://buket-restaurant-${TARGET_ENV} --delete
+          aws s3 sync public/ s3://buket-restaurant-staging --delete
         fi
 
 trigger:
   event:
     - promote
 
-# ------------------------------
-# Paramètres de promote
-# ------------------------------
 parameters:
   TARGET_ENV:
-    description: "Target environment to deploy (production, staging, etc.)"
-    default: "production"
+    description: "Environnement de déploiement (prod ou staging)"
+    default: "staging"
