@@ -1,4 +1,7 @@
 ---
+hugo_env: &hugo_env
+   BASE_URL: https://${DRONE_REPO_OWNER,,}.github.io/${DRONE_REPO_NAME}/
+  
 kind: pipeline
 type: docker
 name: deploy-hugo-s3
@@ -7,10 +10,12 @@ steps:
   # ------------------------------
   # 1️⃣ Build Hugo
   # ------------------------------
-  - name: build-hugo
-    image: klakegg/hugo:0.65.3-mod
+  - name: hugo-build
+    image: peaceiris/hugo:v0.65.3-mod
+    environment:
+      <<: *hugo_env
     commands:
-      - hugo --minify
+      - hugo --baseURL $BASE_URL
 
   # ------------------------------
   # 2️⃣ Déploiement vers S3
