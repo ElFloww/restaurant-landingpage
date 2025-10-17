@@ -1,11 +1,20 @@
 ---
 kind: pipeline
 type: docker
-name: deploy-html-css-s3
+name: deploy-hugo-s3
 
 steps:
   # ------------------------------
-  # 1️⃣ Déploiement vers S3
+  # 1️⃣ Build Hugo
+  # ------------------------------
+  - name: hugo-build
+    image: klakegg/hugo:0.120.0-ext-alpine
+    commands:
+      - echo "Building Hugo site..."
+      - hugo --minify -d public
+
+  # ------------------------------
+  # 2️⃣ Déploiement vers S3
   # ------------------------------
   - name: deploy-to-s3
     image: plugins/s3
@@ -15,14 +24,14 @@ steps:
       secret_key:
         from_secret: aws_secret_access_key
       session_token:
-        from_secret: aws_session_token  
+        from_secret: aws_session_token
       bucket: buket-restaurant
       region: us-east-1
-      source: "./**/*"  
+      source: ./public/**/*
       target: /
       acl: public-read
       cache_control: max-age=31536000
-      strip_components: 0 
+      strip_components: 0
 
 # ------------------------------
 # Déclencheurs
