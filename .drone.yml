@@ -32,8 +32,10 @@ steps:
   # Build Hugo
   - name: hugo-build
     image: peaceiris/hugo:v0.65.3-mod
+    environment:
+      BASE_URL_PROD: http://buket-restaurant-staging.s3-website-us-east-1.amazonaws.com/
     commands:
-      - hugo
+      - hugo --baseURL $BASE_URL_PROD
 
   # Packager en tar.gz
   - name: package-build
@@ -79,29 +81,9 @@ steps:
   - name: hugo-build
     image: peaceiris/hugo:v0.65.3-mod
     environment:
-      BASE_URL_PROD: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
+      BASE_URL_PROD: http://buket-restaurant-production.s3-website-us-east-1.amazonaws.com/
     commands:
       - hugo --baseURL $BASE_URL_PROD
-
-  # # Créer une archive
-  # - name: package-build
-  #   image: alpine:latest
-  #   commands:
-  #     - tar -czf build-${DRONE_TAG}.tar.gz -C public .
-
-  # # Upload vers S3 sous forme TAG
-  # - name: upload-to-s3
-  #   image: amazon/aws-cli:2.13.7
-  #   environment:
-  #     AWS_ACCESS_KEY_ID:
-  #       from_secret: aws_access_key_id
-  #     AWS_SECRET_ACCESS_KEY:
-  #       from_secret: aws_secret_access_key
-  #     AWS_SESSION_TOKEN:
-  #       from_secret: aws_session_token
-  #     AWS_DEFAULT_REGION: us-east-1
-  #   commands:
-  #     - aws s3 cp build-${DRONE_TAG}.tar.gz s3://buket-restaurant-release/release/resto-${DRONE_TAG}.tar.gz
 
 trigger:
   event:
