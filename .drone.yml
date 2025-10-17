@@ -25,7 +25,6 @@ trigger:
       - master
 
 ---
-
 hugo_env: &hugo_env
   BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
 
@@ -71,3 +70,118 @@ trigger:
     - push
   branch:
     - master
+
+---
+hugo_env: &hugo_env
+  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
+
+# ============================================
+# 🏷️ BUILD + UPLOAD (tag)
+# ============================================
+kind: pipeline
+type: docker
+name: hugo-build-and-upload-tag
+
+steps:
+  # Build Hugo
+  - name: hugo-build
+    image: peaceiris/hugo:v0.65.3-mod
+    environment:
+      <<: *hugo_env
+    commands:
+      - hugo --baseURL $BASE_URL
+
+  # Créer une archive
+  - name: package-build
+    image: alpine:latest
+    commands:
+      - tar -czf build-${DRONE_TAG}.tar.gz -C public .
+
+  # Upload vers S3 sous forme TAG
+  - name: upload-to-s3
+    image: amazon/aws-cli:2.13.7
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: aws_access_key_id
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: aws_secret_access_key
+      AWS_SESSION_TOKEN:
+        from_secret: aws_session_token
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - aws s3 cp build-${DRONE_TAG}.tar.gz s3://release/resto-${DRONE_TAG}.tar.gz
+
+trigger:
+  event:
+    - tag
+
+---
+hugo_env: &hugo_env
+  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
+  
+# ============================================
+# 🚀 PROMOTE (déploiement staging/prod)
+# ============================================
+kind: pipeline
+type: docker
+name: promote-to-environment
+
+steps:
+  - name: set-target
+    image: alpine:latest
+    environment:
+      TARGET_ENV: ${TARGET_ENV}
+    commands:
+      - echo "Promotion target: $TARGET_ENV"
+
+  # Télécharger le bon build selon l'environnement
+  - name: download-build
+    image: amazon/aws-cli:2.13.7
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: aws_access_key_id
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: aws_secret_access_key
+      AWS_SESSION_TOKEN:
+        from_secret: aws_session_token
+      AWS_DEFAULT_REGION: us-east-1
+      TARGET_ENV: ${TARGET_ENV}
+    commands:
+      - mkdir -p public
+      - |
+        if [ "$TARGET_ENV" = "prod" ]; then
+          aws s3 cp s3://release/resto-${DRONE_TAG}.tar.gz ./build.tar.gz
+        else
+          SHORT_SHA=$(echo ${DRONE_COMMIT_SHA} | cut -c1-7)
+          aws s3 cp s3://release/resto-${SHORT_SHA}.tar.gz ./build.tar.gz
+        fi
+      - tar -xzf build.tar.gz -C public
+
+  # Déploiement sur le bucket cible
+  - name: deploy-to-s3
+    image: amazon/aws-cli:2.13.7
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: aws_access_key_id
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: aws_secret_access_key
+      AWS_SESSION_TOKEN:
+        from_secret: aws_session_token
+      AWS_DEFAULT_REGION: us-east-1
+      TARGET_ENV: ${TARGET_ENV}
+    commands:
+      - |
+        if [ "$TARGET_ENV" = "prod" ]; then
+          aws s3 sync public/ s3://buket-restaurant-prod --delete
+        else
+          aws s3 sync public/ s3://buket-restaurant-staging --delete
+        fi
+
+trigger:
+  event:
+    - promote
+
+parameters:
+  TARGET_ENV:
+    description: "Environnement de déploiement (prod ou staging)"
+    default: "staging"
