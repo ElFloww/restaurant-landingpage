@@ -7,8 +7,8 @@ steps:
   # ------------------------------
   # 1️⃣ Build Hugo
   # ------------------------------
-  - name: hugo-build
-    image: hugomods/hugo:latest-ext-alpine
+  - name: build-hugo
+    image: klakegg/hugo:0.65.3-mod
     commands:
       - hugo --minify
 
