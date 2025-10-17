@@ -1,9 +1,12 @@
 hugo_env: &hugo_env
   BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
-  
+
+# ------------------------------
+# Pipeline principal
+# ------------------------------
 kind: pipeline
 type: docker
-name: deploy-hugo-s3
+name: hugo-build-and-upload
 
 steps:
   # ------------------------------
@@ -17,7 +20,17 @@ steps:
       - hugo --baseURL $BASE_URL
 
   # ------------------------------
-  # 2️⃣ Déploiement vers S3 avec AWS CLI
+  # 2️⃣ Packager le build
+  # ------------------------------
+  - name: package-build
+    image: alpine:latest
+    commands:
+      - apk add --no-cache zip
+      - ZIP_NAME="build-${DRONE_COMMIT_SHA}.zip"
+      - cd public && zip -r "../$ZIP_NAME" ./*
+
+  # ------------------------------
+  # 3️⃣ Upload compressé vers S3
   # ------------------------------
   - name: upload-to-s3
     image: amazon/aws-cli:2.13.7
@@ -30,14 +43,12 @@ steps:
         from_secret: aws_session_token
       AWS_DEFAULT_REGION: us-east-1
     commands:
-      - aws s3 sync public/ s3://buket-restaurant --delete
+      - aws s3 cp build-${DRONE_COMMIT_SHA}.zip s3://buket-restaurant/builds/${DRONE_COMMIT_SHA}.zip
 
-# ------------------------------
-# Déclencheurs
-# ------------------------------
 trigger:
   branch:
     - master
   event:
     - push
-    - custom
+    - tag
+    - promote
