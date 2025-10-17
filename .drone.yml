@@ -25,9 +25,7 @@ steps:
   - name: package-build
     image: alpine:latest
     commands:
-      - apk add --no-cache zip
-      - ZIP_NAME="build-${DRONE_COMMIT_SHA}.zip"
-      - cd public && zip -r "../$ZIP_NAME" ./*
+      - tar -czf build-${DRONE_COMMIT_SHA}.tar.gz -C public .
 
   # ------------------------------
   # 3️⃣ Upload compressé vers S3
