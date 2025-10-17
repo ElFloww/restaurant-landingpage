@@ -65,24 +65,24 @@ trigger:
     - push
 
 
----
+# ---
 
 # ============================================
 # 🏷️ BUILD + UPLOAD (tag)
 # ============================================
-kind: pipeline
-type: docker
-name: hugo-build-and-upload-tag
+# kind: pipeline
+# type: docker
+# name: hugo-build-and-upload-tag
 
-steps:
-  # Build Hugo
-  - name: hugo-build
-    image: peaceiris/hugo:v0.65.3-mod
-    environment:
-      BASE_URL_PROD: http://buket-restaurant-production.s3-website-us-east-1.amazonaws.com/
-    commands:
-      - hugo --baseURL $BASE_URL_PROD
+# steps:
+#   # Build Hugo
+#   - name: hugo-build
+#     image: peaceiris/hugo:v0.65.3-mod
+#     environment:
+#       BASE_URL_PROD: http://buket-restaurant-production.s3-website-us-east-1.amazonaws.com/
+#     commands:
+#       - hugo --baseURL $BASE_URL_PROD
 
-trigger:
-  event:
-    - tag
+# trigger:
+#   event:
+#     - tag
