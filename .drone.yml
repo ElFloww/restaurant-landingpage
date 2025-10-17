@@ -16,7 +16,7 @@ steps:
         from_secret: aws_secret_access_key
       bucket: buket-restaurant
       region: us-east-1
-      source: ./
+      source: "./**/*"  
       target: /
       acl: public-read
       cache_control: max-age=31536000
