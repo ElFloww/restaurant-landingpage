@@ -8,10 +8,9 @@ steps:
   # 1️⃣ Build Hugo
   # ------------------------------
   - name: hugo-build
-    image: klakegg/hugo:0.120.0-ext-alpine
+    image: hugomods/hugo:latest-ext-alpine
     commands:
-      - echo "Building Hugo site..."
-      - hugo --minify -d public
+      - hugo --minify
 
   # ------------------------------
   # 2️⃣ Déploiement vers S3
