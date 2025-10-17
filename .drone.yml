@@ -44,7 +44,7 @@ trigger:
     - push
     - custom
 
-
+---
 kind: pipeline
 type: docker
 name: promote-to-environment
