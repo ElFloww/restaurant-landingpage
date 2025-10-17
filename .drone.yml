@@ -9,7 +9,7 @@ steps:
   - name: build-hugo
     image: peaceiris/hugo:v0.65.3-mod
     commands:
-      - hugo --baseURL localhost/
+      - hugo
 
 # Trigger sur TOUTES les branches
 trigger:
@@ -63,6 +63,7 @@ trigger:
     - master
   event:
     - push
+    - custom
 
 
 # ---
