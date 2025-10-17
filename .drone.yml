@@ -63,8 +63,6 @@ trigger:
     - master
   event:
     - push
-    - custom
-
 
 
 ---
@@ -84,8 +82,7 @@ steps:
       BASE_URL_PROD: http://buket-restaurant-production.s3-website-us-east-1.amazonaws.com/
     commands:
       - hugo --baseURL $BASE_URL_PROD
-    when:
-      event:
-        - tag
-      ref:
-        - refs/tags/v*
+
+trigger:
+  event:
+    - tag
