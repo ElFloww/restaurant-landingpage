@@ -17,24 +17,20 @@ steps:
       - hugo --baseURL $BASE_URL
 
   # ------------------------------
-  # 2️⃣ Déploiement vers S3
+  # 2️⃣ Déploiement vers S3 avec AWS CLI
   # ------------------------------
-  - name: upload
-    image: plugins/s3
-    settings:
-      bucket: buket-restaurant
-      access_key:
+  - name: upload-to-s3
+    image: amazon/aws-cli:2.13.7
+    environment:
+      AWS_ACCESS_KEY_ID:
         from_secret: aws_access_key_id
-      secret_key:
+      AWS_SECRET_ACCESS_KEY:
         from_secret: aws_secret_access_key
-      session_token:
+      AWS_SESSION_TOKEN:
         from_secret: aws_session_token
-      region: us-east-1
-      source: public/**/*
-      target: /
-      acl: public-read
-      cache_control: max-age=31536000
-      strip_components: 0
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - aws s3 sync public/ s3://drone-bucket-s3-restaurant --delete
 
 # ------------------------------
 # Déclencheurs
