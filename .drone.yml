@@ -1,30 +1,30 @@
-hugo_env: &hugo_env
-  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
+# hugo_env: &hugo_env
+#   BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
 
-# ============================================
-# 🏗️ PIPELINE BUILD (toutes les branches)
-# ============================================
-kind: pipeline
-type: docker
-name: hugo-build
+# # ============================================
+# # 🏗️ PIPELINE BUILD (toutes les branches)
+# # ============================================
+# kind: pipeline
+# type: docker
+# name: hugo-build
 
-steps:
-  - name: build-hugo
-    image: peaceiris/hugo:v0.65.3-mod
-    environment:
-      <<: *hugo_env
-    commands:
-      - hugo --baseURL $BASE_URL
+# steps:
+#   - name: build-hugo
+#     image: peaceiris/hugo:v0.65.3-mod
+#     environment:
+#       <<: *hugo_env
+#     commands:
+#       - hugo --baseURL $BASE_URL
 
-# Trigger sur TOUTES les branches
-trigger:
-  event:
-    - push
-  branch:
-    exclude:
-      - master
+# # Trigger sur TOUTES les branches
+# trigger:
+#   event:
+#     - push
+#   branch:
+#     exclude:
+#       - master
       
----
+# ---
 hugo_env: &hugo_env
   BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
 
