@@ -89,7 +89,3 @@ steps:
         - tag
       ref:
         - refs/tags/v*
-
-trigger:
-  event:
-    - tag
