@@ -1,24 +1,22 @@
 hugo_env: &hugo_env
   BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
 
-
-
-# ------------------------------
-# Pipeline de build + packager
-# ------------------------------
+# ============================================
+# 🏗️ PIPELINE BUILD (toutes les branches)
+# ============================================
 kind: pipeline
 type: docker
-name: hugo-build-and-upload
+name: hugo-build
 
 steps:
-  # Build Hugo
-  - name: hugo-build
+  - name: build-hugo
     image: peaceiris/hugo:v0.65.3-mod
     environment:
       <<: *hugo_env
     commands:
       - hugo --baseURL $BASE_URL
 
+# Trigger sur TOUTES les branches
 trigger:
   event:
     - push
@@ -28,13 +26,15 @@ trigger:
 
 ---
 
+hugo_env: &hugo_env
+  BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
 
-# ------------------------------
-# Pipeline de build + packager
-# ------------------------------
+# ============================================
+# 🏗️ BUILD + UPLOAD (branche master)
+# ============================================
 kind: pipeline
 type: docker
-name: hugo-build-and-upload
+name: hugo-build-and-upload-master
 
 steps:
   # Build Hugo
@@ -45,13 +45,13 @@ steps:
     commands:
       - hugo --baseURL $BASE_URL
 
-  # Packager en tar.gz
+  # Créer une archive
   - name: package-build
     image: alpine:latest
     commands:
       - tar -czf build-${DRONE_COMMIT_SHA}.tar.gz -C public .
 
-  # Upload compressé vers S3 (archive de build)
+  # Upload vers S3 sous forme SHA
   - name: upload-to-s3
     image: amazon/aws-cli:2.13.7
     environment:
@@ -63,11 +63,11 @@ steps:
         from_secret: aws_session_token
       AWS_DEFAULT_REGION: us-east-1
     commands:
-      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://buket-restaurant-release/builds/${DRONE_COMMIT_SHA}.tar.gz
+      - SHORT_SHA=$(echo ${DRONE_COMMIT_SHA} | cut -c1-7)
+      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://release/resto-${SHORT_SHA}.tar.gz
 
 trigger:
-  branch:
-    - master
   event:
     - push
-    - custom
+  branch:
+    - master
