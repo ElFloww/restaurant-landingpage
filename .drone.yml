@@ -1,39 +1,12 @@
-# hugo_env: &hugo_env
-#   BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
-
-# # ============================================
-# # 🏗️ PIPELINE BUILD (toutes les branches)
-# # ============================================
-# kind: pipeline
-# type: docker
-# name: hugo-build
-
-# steps:
-#   - name: build-hugo
-#     image: peaceiris/hugo:v0.65.3-mod
-#     environment:
-#       <<: *hugo_env
-#     commands:
-#       - hugo --baseURL $BASE_URL
-
-# # Trigger sur TOUTES les branches
-# trigger:
-#   event:
-#     - push
-#   branch:
-#     exclude:
-#       - master
-      
-# ---
 hugo_env: &hugo_env
   BASE_URL: http://buket-restaurant.s3-website-us-east-1.amazonaws.com
 
-# ============================================
-# 🏗️ BUILD + UPLOAD (branche master)
-# ============================================
+# ------------------------------
+# Pipeline de build + packager
+# ------------------------------
 kind: pipeline
 type: docker
-name: hugo-build-and-upload-master
+name: hugo-build-and-upload
 
 steps:
   # Build Hugo
@@ -44,13 +17,13 @@ steps:
     commands:
       - hugo --baseURL $BASE_URL
 
-  # Créer une archive
+  # Packager en tar.gz
   - name: package-build
     image: alpine:latest
     commands:
       - tar -czf build-${DRONE_COMMIT_SHA}.tar.gz -C public .
 
-  # Upload vers S3 sous forme SHA
+  # Upload compressé vers S3 (archive de build)
   - name: upload-to-s3
     image: amazon/aws-cli:2.13.7
     environment:
@@ -62,11 +35,11 @@ steps:
         from_secret: aws_session_token
       AWS_DEFAULT_REGION: us-east-1
     commands:
-      - SHORT_SHA=$(echo ${DRONE_COMMIT_SHA} | cut -c1-7)
-      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://release/resto-${SHORT_SHA}.tar.gz
+      - aws s3 cp build-${DRONE_COMMIT_SHA}.tar.gz s3://buket-restaurant-release/builds/${DRONE_COMMIT_SHA}.tar.gz
 
 trigger:
-  event:
-    - push
   branch:
     - master
+  event:
+    - push
+    - custom
